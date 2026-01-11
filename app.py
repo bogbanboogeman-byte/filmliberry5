@@ -1,9 +1,14 @@
 import functools
 
+from dateutil import parser
+
+from  sqlalchemy import create_engine
+
 from flask import Flask, render_template, redirect, url_for
 from flask import request, session
 import sqlite3
-
+import database
+import models
 
 app = Flask(__name__)
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
@@ -66,11 +71,15 @@ def user_register():
     password = request.form['password']
     login = request.form['login']
     email = request.form['email']
-    birthe_date = request.form['birthe_date']
-    with (db_connection() as cur):
-        cur.execute =( "INSERT INTO user ( first_name, last_name, password, login, email, birthe_date ) VALUES (?, ?, ?, ?, ?, ? )",
-          (first_name, last_name, password, login, email, birthe_date))
-    return 'Register'
+    birthe_date = parser.parse(request.form['birthe_date'])
+
+    databse.init_db()
+
+    new_user = models.User(first_name=first_name, last_name=last_name, password=password, login=login, email=email, birthe_date=birthe_date)
+
+    databse.db_session.add(new_user)
+    databse.db_session.commit()
+    return redirect(url_for('main_page'))
 
 @app.route('/login', methods=['GET'])
 def user_login():
@@ -78,16 +87,22 @@ def user_login():
 
 @app.route('/login', methods=['POST'])
 def user_login_post():
-        login = request.form['login']
-        password = request.form['password']
-        with (db_connection() as cur):
-            cur.execute("SELECT * FROM user WHERE login = ? AND password = ?",(login, password))
-            result = cur.fetchall()
-        if result:
-            session['logged_in'] = True
-            session['user_id'] = result = ['id']
-            return  f'login with user{result}'
-        return 'Login failed'
+    login = request.form['login']
+    password = request.form['password']
+
+    databse.init_db()
+
+    stmt = select(models.User).where(models.User.login == login, models.User.password == password)
+    data = databse.db_session.execute(stmt).fetchone()
+
+    result = databse.db_session.query(models.User).filter_by(login=login, password=password).first()
+
+
+    if result:
+        session['logged_in'] = True
+        session['user_id'] = result = ['id']
+        return  f'login with user{result}'
+    return 'Login failed'
 
 
 
