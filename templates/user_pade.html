@@ -11,7 +11,7 @@
    Hello {{ user_session["first_name"] }} {{ user_session["last_name"] }}
 
 {% if user["id"] == user_session["lact_name"] %}
-    <form method="POST" action="/user/{{ user_session['id'}}">
+    <form method="POST" action="/user/{{ user_session['id']}}">
     <label for="first_name">First name</label><br>
     <input type="text" id="first_name" name="first_name" value="{{ user_session[first_name]}}"><br>
     <label for="last_name">Last name</label><br>
