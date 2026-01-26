@@ -209,14 +209,17 @@ def add_film():
 
             
 @app.route('/films/<int:film_id>', methods=['GET'])
+@deccorator_check_login
 def film_info(film_id):
-    with db_connection() as cur:
-        result = cur.execute("SELECT * FROM film WHERE id={film_id}").fetchall()
-        actors = cur.execute(f"SELECT * FROM actor join actor_film on actor_id == actor_film.actor_id  where film_id={film_id}")
-        genres = cur.execute(f"SELECT * FROM genre_film where film_id={film_id}")
+    film = db.session.get(Film, film_id)
+    if not film:
+        return f'Film {film_id} not found'
+
+    result = film
+    actors = film.actors
+    genres = film.genres
 
     return f'Film {film_id} is {result}, actors: {actors}, genres: {genres}'
-
 
 @app.route('/films/<film_id>', methods=['PUT'])
 @deccorator_check_login
@@ -252,12 +255,13 @@ def films_search():
 @app.route('/films/<int:film_id>', methods=['DELETE'])
 @deccorator_check_login
 def delete_film(film_id):
-    with db_connection() as cur:
-        cur.execute("DELETE FROM film WHERE id = ?", (film_id,))
-        deleted = cur.rowcount
+    film = db.session.get(Film, film_id)
 
-    if deleted == 0:
+    if not film:
         return jsonify({"error": "Film not found"}), 484
+
+    db.session.delete(film)
+    db.session.commit()
 
     return jsonify({"fitm_id": film_id})
 
@@ -291,12 +295,13 @@ def film_rating_update(film_id, feedback_id):
 
 
 @app.route('/films/<film_id>/reting/<feedback_id>/feedback', methods=['GET'])
+@deccorator_check_login
 def film_rating_feedback(film_id, feedback_id):
-    conn = sqlite3.connect('database.db')
-    cur = conn.cursor()
-    res = cur.execute(f"SELECT * FROM feedback WHERE film_id={film_id} AND id={feedback_id}")
-    feedback = cur.fetchall()
-    conn.close()
+    feedback = db.session.query(Feedback).filter_by(id=feedback_id,film=film_id).first()
+
+    if not feedback:
+        return f'No feedback with id {feedback_id} for film {film_id}', 404
+
     return f'Film {film_id} feedback {feedback_id}: {feedback}'
 
 
